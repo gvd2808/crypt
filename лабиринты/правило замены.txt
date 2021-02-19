@@ -1,0 +1,6 @@
+LBR = B
+LBS = R
+LBL = S
+SBL = R
+SBS = B
+RBL = B

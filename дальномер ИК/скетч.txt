@@ -1,0 +1,79 @@
+//Инфракрасный датчик расстояния
+//3d-diy.ru
+// подключение библиотек для работы с дисплеем Nokia
+#include <Adafruit_GFX.h>
+#include <Adafruit_PCD8544.h>
+// Nokia 5110
+// pin 3 - Serial clock out (SCLK)
+// pin 4 - Serial data out (DIN)
+// pin 5 - Data/Command select (D/C)
+// pin 6 - LCD chip select (CS)
+// pin 7 - LCD reset (RST)
+Adafruit_PCD8544 display = Adafruit_PCD8544(3, 4, 5, 6, 7);
+// аналоговый пин для подключения выхода Vo сенсора
+const int IRpin = A0;
+// переменные
+int value1; // для хранения аналогового значения
+unsigned long timevisitors; // время прохождения
+int count_visitors=0; // переменная подсчета посетителей
+
+void setup() {
+// запуск последовательного порта
+Serial.begin(9600);
+Serial.println("start");
+// инициализация дисплея
+display.begin();
+// установить контраст фона экрана
+display.setContrast(60);
+display.clearDisplay(); // очистить экран
+display.setTextSize(1); // размер шрифта
+display.setTextColor(BLACK); // цвет
+// заставка
+display.setCursor(5,15);
+display.print("Visitors: 0");
+display.display();
+delay(2000);
+}
+
+void loop() {
+// получаем сглаженное значение и переводим в напряжение
+value1=irRead();
+if(value1>50) // фиксация прохождения
+{
+timevisitors=millis();
+while(irRead()>50) ;
+if(millis()-timevisitors>300) // > минимального времени прохождения
+{
+Serial.println("passage!!!");
+count_visitors=count_visitors+1; // увеличение счетчика
+// вывод в монитор последовательного порта
+Serial.print("count_visitors=");
+Serial.println(count_visitors);
+// вывод на дисплей
+display.clearDisplay();
+display.setCursor(5,15);
+display.print("Visitors: ");
+display.print(count_visitors);
+display.display();
+}
+}
+delay(200);
+}
+
+// Усреднение нескольких значений для сглаживания
+int irRead() {
+int averaging = 0; // переменная для суммирования данных
+// Получение 5 значений
+for (int i=0; i<5; i++)
+{
+value1 = analogRead(IRpin);
+// значение сенсора переводим в напряжение
+float volts = analogRead(IRpin)*0.0048828125;
+// и в расстояние в см
+int distance=32*pow(volts,-1.10);
+averaging = averaging + distance;
+delay(55); // Ожидание 55 ms перед каждым чтением
+}
+value1 = averaging / 5; // усреднить значения
+return(value1);
+}
